@@ -174,6 +174,9 @@ jobs:
     needs: [lint, typecheck, test]
     if: always()
     continue-on-error: true
+    env:
+      # Secrets cannot be read directly in `if:` conditions; route via env.
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -223,7 +226,7 @@ jobs:
           echo "status=$STATUS" >> $GITHUB_OUTPUT
 
       - uses: ./.github/actions/send-build-alert
-        if: ${{ secrets.SLACK_WEBHOOK_URL != '' }}
+        if: env.SLACK_WEBHOOK_URL != ''
         continue-on-error: true
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
