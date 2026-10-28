@@ -1,0 +1,46 @@
+# Dependency updates for the self-hosted LTS.
+#
+# Scope is deliberately narrow. This fork carries security and patch work, not
+# feature work, so major bumps are excluded from automated PRs: a major inside
+# a monorepo this size needs a human reading release notes, not a green check.
+# Dependabot alerts still fire independently of this file, so majors that
+# matter will surface there.
+#
+# The `bun` ecosystem understands the single root lockfile, which covers every
+# workspace member.
+version: 2
+
+updates:
+  - package-ecosystem: "bun"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      # Patch and minor land as two PRs a week instead of forty.
+      patch:
+        update-types: ["patch"]
+      minor:
+        update-types: ["minor"]
+    ignore:
+      # `version-update:semver-major` applies only to version updates.
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "America/New_York"
+    commit-message:
+      prefix: "chore(ci)"
+    groups:
+      actions:
+        update-types: ["minor", "patch"]
