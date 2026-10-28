@@ -70,12 +70,15 @@ is fork-specific hardening. Baseline upstream commit: `276d2f1547`.
 
 ### Known gaps
 
-- **Full test suite state is unverified.** The suite is 2,650 files. An
-  incomplete run covered roughly 1,000 of them with 10 failing, and the
-  credential-store tests (`secure-keys`, `credential-broker*`,
-  `script-proxy-certs`) fail when invoked individually because they read the
-  live credential vault instead of the harness's isolated one. Establish a real
-  baseline before treating CI as meaningful.
+- **21 of 2,650 test files fail.** Measured 2026-10-28 on a full run:
+  2,629 files pass, 21 fail. The failing set is entirely the credential,
+  secret, and environment layer (`secure-keys`, `credential-broker*`,
+  `script-proxy-certs`, `shell-credential-ref`, `slack`/`discord`/`telegram`
+  channel config, `provider-key-env-fallback`, ACP auth). Nothing in that set
+  touches the updater, CI, or build config changed by this fork, and several
+  of them read a real credential store instead of the harness's isolated one,
+  so they appear to have been red upstream as well. Confirm before treating CI
+  as meaningful.
 - **Typecheck requires the workspace's own toolchain.** `typescript@5.9.3` is
   a dev dependency of each workspace member, so run `bun run typecheck` from
   the repo root (which delegates) rather than expecting a global `tsc`.
