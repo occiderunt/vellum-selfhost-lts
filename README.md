@@ -153,4 +153,4 @@ Vellum Assistant is open-source software built by [Vellum AI](https://vellum.ai)
 
 ---
 
-<p align="center">Built with 💚 by <a href="https://vellum.ai">Vellum</a></p>
+<p align="center">Built with 💚 by <a href="https://vellum.ai">Vellum</a> and <a href="https://github.com/occiderunt">occiderunt</a> </p>
