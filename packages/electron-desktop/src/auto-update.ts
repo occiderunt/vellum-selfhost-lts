@@ -19,15 +19,25 @@ export type {
   UpdaterLogger,
 } from "./auto-update-contract";
 
-/** Environment-, platform-, and architecture-isolated generic feed URL. */
+/**
+ * Generic update feed for this build.
+ *
+ * Upstream resolved this to Vellum's own release bucket
+ * (`vellum-ai-prod-releases`), which is decommissioned alongside the hosted
+ * platform. A self-hosted build must never poll a feed it does not control, so
+ * the feed is now opt-in via `VELLUM_UPDATE_FEED_URL`, which should point at a
+ * directory containing `latest-mac.yml` / `latest-linux.yml` and the artifacts.
+ *
+ * Returning an empty string means auto-update is disabled: no feed is
+ * configured, and `installAutoUpdate` makes no network request. The unused
+ * environment/platform/arch arguments are retained so call sites stay stable
+ * and a future multi-channel setup can restore per-platform feeds.
+ */
 export const resolveUpdateFeedUrl = (
-  environment: string,
-  platform: UpdateFeedPlatform,
-  arch: string,
-): string => {
-  const bucketEnv = environment === "production" ? "prod" : environment;
-  return `https://storage.googleapis.com/vellum-ai-${bucketEnv}-releases/${platform}/${arch}/`;
-};
+  _environment: string,
+  _platform: UpdateFeedPlatform,
+  _arch: string,
+): string => process.env.VELLUM_UPDATE_FEED_URL?.trim() ?? "";
 
 let autoUpdater: DesktopAutoUpdater;
 let handle: IpcHandle;
@@ -58,6 +68,7 @@ const setState = (next: UpdateState): void => {
 };
 
 export const checkForUpdates = (): void => {
+  if (!feedUrl) return;
   autoUpdater
     .checkForUpdates()
     .then((result) => {
@@ -80,6 +91,11 @@ export const installAutoUpdate = (): void => {
   );
 
   if (!app.isPackaged) return;
+
+  if (!feedUrl) {
+    log.info("[auto-update] no feed configured; auto-update disabled");
+    return;
+  }
 
   autoUpdater.logger = log;
   autoUpdater.autoDownload = true;

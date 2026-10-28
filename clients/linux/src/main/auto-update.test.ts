@@ -45,30 +45,57 @@ mock.module("./ipc.client", () => ({
 
 const { installAutoUpdate, linuxUpdateFeedUrl } = await import("./auto-update");
 
+const withFeed = (feed: string | undefined, fn: () => void): void => {
+  const original = process.env.VELLUM_UPDATE_FEED_URL;
+  if (feed === undefined) {
+    delete process.env.VELLUM_UPDATE_FEED_URL;
+  } else {
+    process.env.VELLUM_UPDATE_FEED_URL = feed;
+  }
+  try {
+    fn();
+  } finally {
+    if (original === undefined) {
+      delete process.env.VELLUM_UPDATE_FEED_URL;
+    } else {
+      process.env.VELLUM_UPDATE_FEED_URL = original;
+    }
+  }
+};
+
 describe("linuxUpdateFeedUrl", () => {
-  test("targets the architecture-specific linux-electron feed", () => {
-    expect(linuxUpdateFeedUrl("x64")).toBe(
-      "https://storage.googleapis.com/vellum-ai-prod-releases/linux-electron/x64/",
-    );
-    expect(linuxUpdateFeedUrl("arm64")).toBe(
-      "https://storage.googleapis.com/vellum-ai-prod-releases/linux-electron/arm64/",
-    );
+  test("is disabled when no self-hosted feed is configured", () => {
+    withFeed(undefined, () => {
+      expect(linuxUpdateFeedUrl("x64")).toBe("");
+      expect(linuxUpdateFeedUrl("arm64")).toBe("");
+    });
+  });
+
+  test("targets the self-hosted feed when one is configured", () => {
+    withFeed("https://updates.example.test/linux/", () => {
+      expect(linuxUpdateFeedUrl("x64")).toBe("https://updates.example.test/linux/");
+    });
   });
 });
 
 describe("resolveUpdateFeedUrl", () => {
-  test("keeps environments, architectures, and platforms isolated", () => {
-    const feeds = [
-      resolveUpdateFeedUrl("production", "linux-electron", "x64"),
-      resolveUpdateFeedUrl("production", "linux-electron", "arm64"),
-      resolveUpdateFeedUrl("staging", "linux-electron", "x64"),
-      resolveUpdateFeedUrl("dev", "linux-electron", "x64"),
-      resolveUpdateFeedUrl("production", "mac-electron", "x64"),
-    ];
-    expect(new Set(feeds).size).toBe(feeds.length);
-    expect(resolveUpdateFeedUrl("staging", "linux-electron", "arm64")).toBe(
-      "https://storage.googleapis.com/vellum-ai-staging-releases/linux-electron/arm64/",
-    );
+  test("never falls back to a Vellum-owned release bucket", () => {
+    withFeed(undefined, () => {
+      const feeds = [
+        resolveUpdateFeedUrl("production", "linux-electron", "x64"),
+        resolveUpdateFeedUrl("production", "mac-electron", "arm64"),
+        resolveUpdateFeedUrl("staging", "linux-electron", "x64"),
+      ];
+      expect(feeds).toEqual(["", "", ""]);
+    });
+  });
+
+  test("prefers VELLUM_UPDATE_FEED_URL when set", () => {
+    withFeed("https://updates.example.test/feed/", () => {
+      expect(resolveUpdateFeedUrl("production", "mac-electron", "arm64")).toBe(
+        "https://updates.example.test/feed/",
+      );
+    });
   });
 });
 
