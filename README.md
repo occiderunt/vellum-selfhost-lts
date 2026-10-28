@@ -15,7 +15,7 @@
 
 ## What It Does
 
-(Heads Up: This is an LTS stability repo for the original Vellum AI by Vellum. The original will be shut down starting November 2nd 2026) If you've set up a Personal AI on OpenClaw, Hermes Agent, or Claude Code, you know how long it takes, and how many times you have to hatch a new one to get it right. Vellum gets you the result you're looking for out of the box, one download away.
+(Heads Up: This is an LTS stability repo for the original Vellum AI by Vellum. The original will be shut down starting November 2nd 2026. If you want to support the original creators of Vellum, please read the License section of this document, down below.) If you've set up a Personal AI on OpenClaw, Hermes Agent, or Claude Code, you know how long it takes, and how many times you have to hatch a new one to get it right. Vellum gets you the result you're looking for out of the box, one download away.
 | Area                          | Summary |
 | ----------------------------- | --- |
 | **Memory**                    | Eight types (episodic, semantic, procedural, emotional, prospective, behavioral, narrative, shared), each with its own staleness window, hybrid dense + sparse retrieval, and per-user and per-channel isolation. Structured items (identity, preferences, projects, events) extracted from conversations with source attribution and dedup. Embeddings run locally by default. Not a SQLite + Markdown file you maintain yourself. |
