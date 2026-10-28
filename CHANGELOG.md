@@ -5,8 +5,9 @@ Vellum assistant runtime, maintained after the hosted platform was retired.
 
 ## Versioning policy
 
-Releases are tagged `v0.12.6-lts.N` and the root `package.json` carries the
-same string. The **per-package versions are left at their upstream values on
+Releases are tagged `0.12.6-lts.N` (no `v` prefix) and the root `package.json`
+carries the same string. The **per-package versions are left at their upstream
+values on
 purpose**: keeping `assistant/package.json` at `0.12.6` means a `git diff`
 against upstream stays readable, and it is obvious which packages have been
 touched by this fork and which have not. The root version is the release
@@ -21,6 +22,23 @@ identity; the workspace member versions are provenance.
 
 `bun install` must be run after every pull: the lockfile is the contract, and
 `bun ci`/`--frozen-lockfile` is used in CI.
+
+## Releasing
+
+Releases are published by pushing a tag. Nothing is uploaded by hand.
+
+1. Add a `## [<version>] - <date>` section to this file. It becomes the release
+   notes verbatim.
+2. `./scripts/release.sh <version>`
+
+The script checks the tree is clean and on `main`, typechecks, bumps the root
+`package.json`, commits, tags, and pushes. The tag push runs
+`.github/workflows/release.yml`, which publishes the GitHub Release from the
+matching changelog section using the token Actions mints for the run.
+
+To republish a release for a tag that already exists, run the workflow manually
+from the Actions tab with the tag name as input.
+
 
 ## [0.12.6-lts.1] - 2026-10-28
 

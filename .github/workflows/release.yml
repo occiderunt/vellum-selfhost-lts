@@ -1,0 +1,103 @@
+name: Release
+
+# Cutting a release means pushing a tag. This workflow turns that tag into a
+# published GitHub Release, using the token Actions mints for the run, so the
+# maintainer never has to hold a long-lived write-scoped PAT.
+#
+# Tag format: 0.12.6-lts.1  (see CHANGELOG.md "Versioning policy")
+
+on:
+  push:
+    tags:
+      - "[0-9]*"
+      - "v[0-9]*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to publish a release for"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.event.inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Publish release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Resolve tag
+        id: tag
+        run: |
+          set -euo pipefail
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          if [ -z "$TAG" ]; then
+            echo "::error::No tag resolved; nothing to release."
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Check out the tagged commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.tag.outputs.tag }}
+          fetch-depth: 0
+
+      - name: Extract changelog section
+        id: notes
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.tag.outputs.tag }}"
+          # Tags may carry a leading v; changelog headings do not.
+          VER="${TAG#v}"
+
+          mkdir -p .release
+          NOTES=.release/notes.md
+
+          if [ -f CHANGELOG.md ]; then
+            awk -v ver="$VER" '
+              index($0, "## [" ver "]") == 1 { found = 1; next }
+              found && substr($0, 1, 4) == "## [" { exit }
+              found { print }
+            ' CHANGELOG.md | sed -e '${/^$/d;}' > "$NOTES"
+          fi
+
+          if [ ! -s "$NOTES" ]; then
+            echo "::warning::No CHANGELOG section for ${VER}; falling back to generated notes."
+            : > "$NOTES"
+            echo "fallback=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "fallback=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          echo "--- notes ---"
+          cat "$NOTES"
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::notice::Release $TAG already exists; nothing to do."
+            exit 0
+          fi
+
+          NOTES_ARGS=(--notes-file .release/notes.md)
+          if [ "${{ steps.notes.outputs.fallback }}" = "true" ]; then
+            NOTES_ARGS=(--generate-notes)
+          fi
+
+          gh release create "$TAG" \
+            --title "$TAG" \
+            --verify-tag \
+            --latest \
+            "${NOTES_ARGS[@]}"
+
+          echo "Published: $(gh release view "$TAG" --json url --jq .url)"
