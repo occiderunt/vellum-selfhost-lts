@@ -154,3 +154,6 @@ evals/
 # Python bytecode
 __pycache__/
 *.pyc
+
+# Local test/scratch logs
+assistant-tests.log
