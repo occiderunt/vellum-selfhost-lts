@@ -4,13 +4,7 @@
 
 If you discover a security vulnerability in Vellum Assistant, please report it responsibly. **Do not open a public GitHub issue.**
 
-Email **security@vellum.ai** with:
-- A description of the vulnerability
-- Steps to reproduce
-- The potential impact
-- Any suggested fix (optional)
-
-We will acknowledge receipt within 48 hours and aim to provide a resolution timeline within 5 business days.
+Try to fix it on your own copy of Vellum-Selfhost-LTS, and then if functional, add to official repo.
 
 ## Scope
 
