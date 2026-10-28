@@ -72,6 +72,24 @@ if [ "$VELLUM_ENVIRONMENT" = "local" ]; then
   (cd "$APP_DIR/../../cli" && bun install)
 fi
 
+# The desktop client's package.json ships 0.0.1 upstream; release builds stamp
+# the real version. Rewritten in place for the duration of the pack and restored
+# on exit (success or failure) so the checkout is never left dirty.
+# Must be X.Y.Z: CFBundleShortVersionString cannot carry a prerelease suffix.
+if [ -n "${PACK_VERSION:-}" ]; then
+  PKG="$APP_DIR/package.json"
+  cp "$PKG" "$PKG.packbak"
+  trap 'mv -f "$PKG.packbak" "$PKG"' EXIT
+  PACK_VERSION="$PACK_VERSION" node -e '
+    const fs = require("fs");
+    const f = process.argv[1];
+    const p = JSON.parse(fs.readFileSync(f, "utf8"));
+    p.version = process.env.PACK_VERSION;
+    fs.writeFileSync(f, JSON.stringify(p, null, 2) + "\n");
+  ' "$PKG"
+  echo "pack: stamping version $PACK_VERSION"
+fi
+
 bash scripts/fetch-bun.sh --arch "$BUN_ARCH"
 bash scripts/generate-icon.sh
 bash scripts/generate-dmg-background.sh

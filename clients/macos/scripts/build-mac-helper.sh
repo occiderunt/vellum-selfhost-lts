@@ -139,9 +139,12 @@ else
   # with none falls back to ad-hoc exactly as before.
   SIGN_IDENTITY="${VELLUM_HELPER_SIGN_IDENTITY:-}"
   if [ -z "$SIGN_IDENTITY" ]; then
+    # `|| true` inside the substitution: on a machine with no Developer ID the
+    # grep exits 1, and under `set -euo pipefail` that would kill the script
+    # before the ad-hoc fallback two lines below could run.
     SIGN_IDENTITY="$(security find-identity -v -p codesigning 2>/dev/null \
       | grep -m1 "Developer ID Application" \
-      | sed -E 's/.*"(.*)"$/\1/')"
+      | sed -E 's/.*"(.*)"$/\1/' || true)"
   fi
   if [ -z "$SIGN_IDENTITY" ]; then
     SIGN_IDENTITY="-"
