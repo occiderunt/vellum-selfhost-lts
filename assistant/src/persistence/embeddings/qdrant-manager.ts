@@ -276,6 +276,12 @@ export class QdrantManager {
     try {
       proc = Bun.spawn({
         cmd: [spawnPath],
+        // Qdrant resolves its own relative paths (./snapshots/tmp, ./static)
+        // against the process CWD, not against STORAGE_PATH. Inheriting the
+        // daemon's CWD makes startup panic immediately when that CWD is not
+        // writable (on macOS the daemon can run with CWD "/", which is the
+        // read-only sealed system volume).
+        cwd: this.ensureStorageDir(),
         windowsHide: true,
         env: {
           ...process.env,
@@ -342,6 +348,18 @@ export class QdrantManager {
 
   getUrl(): string {
     return this.url;
+  }
+
+  /**
+   * Qdrant writes snapshots to a path relative to its CWD, so the process has
+   * to be spawned from a writable directory. Returns the storage dir, creating
+   * it if the daemon has not yet.
+   */
+  private ensureStorageDir(): string {
+    if (!existsSync(this.storagePath)) {
+      mkdirSync(this.storagePath, { recursive: true });
+    }
+    return this.storagePath;
   }
 
   private async installBinary(binaryPath: string): Promise<void> {
