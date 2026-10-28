@@ -101,6 +101,7 @@ jobs:
           echo "status=$STATUS" >> $GITHUB_OUTPUT
 
       - uses: ./.github/actions/send-build-alert
+        if: ${{ secrets.SLACK_WEBHOOK_URL != '' }}
         continue-on-error: true
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}

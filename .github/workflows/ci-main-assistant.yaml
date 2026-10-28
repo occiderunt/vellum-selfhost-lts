@@ -23,7 +23,7 @@ on:
 jobs:
   lint:
     name: Lint
-    runs-on: ubuntu-latest-8-cores
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
       run:
@@ -56,7 +56,7 @@ jobs:
 
   typecheck:
     name: Type Check
-    runs-on: ubuntu-latest-8-cores
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
       run:
@@ -89,7 +89,7 @@ jobs:
 
   test:
     name: Test
-    runs-on: ubuntu-latest-8-cores
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
       run:
@@ -223,6 +223,7 @@ jobs:
           echo "status=$STATUS" >> $GITHUB_OUTPUT
 
       - uses: ./.github/actions/send-build-alert
+        if: ${{ secrets.SLACK_WEBHOOK_URL != '' }}
         continue-on-error: true
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
