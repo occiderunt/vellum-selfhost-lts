@@ -7,7 +7,6 @@ const {
 } = require("./scripts/entitlements/derive-communication-entitlements");
 
 const env = process.env.VELLUM_ENVIRONMENT || "local";
-const bucketEnv = env === "production" ? "prod" : env;
 const targetArch = process.env.ELECTRON_TARGET_ARCH || "arm64";
 
 const productName =
@@ -62,9 +61,19 @@ const schemes =
 module.exports = {
   appId,
   productName,
+  // electron-builder writes this into the packaged app's app-update.yml.
+  // Upstream pointed it at Vellum's own bucket, which meant every bundle
+  // advertised a release feed the operator did not control. The feed now comes
+  // from VELLUM_UPDATE_FEED_URL and must match `resolveUpdateFeedUrl` in
+  // @vellumai/electron-desktop.
+  //
+  // The placeholder is intentionally unresolvable: an unconfigured build ships
+  // an updater that fails closed instead of one that quietly trusts a
+  // third-party bucket. Set VELLUM_UPDATE_FEED_URL to a generic feed directory
+  // (containing latest-mac.yml and the artifacts) to enable updates.
   publish: {
     provider: "generic",
-    url: `https://storage.googleapis.com/vellum-ai-${bucketEnv}-releases/mac-electron/${targetArch}/`,
+    url: process.env.VELLUM_UPDATE_FEED_URL || "https://updates.invalid/",
   },
   directories: {
     output: "dist",
