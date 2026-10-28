@@ -80,7 +80,9 @@ bash scripts/build-notifier.sh
 bun run build:web
 bash scripts/generate-cli-lockfile.sh
 electron-vite build
-electron-builder --config electron-builder.config.cjs --publish always
+# `always` uploads to the update feed named by VELLUM_UPDATE_FEED_URL. CI that
+# attaches the artifact to a GitHub Release instead passes PACK_PUBLISH=never.
+electron-builder --config electron-builder.config.cjs --publish "${PACK_PUBLISH:-always}"
 
 if [ "$OPEN_AFTER_BUILD" = true ]; then
   # Newest .app wins — dist/ may hold stale apps from prior envs.

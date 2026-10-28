@@ -1,0 +1,123 @@
+name: Release App (macOS)
+
+# Builds the Electron desktop app and attaches the DMG (and update zip) to an
+# existing GitHub Release. Triggered manually with a tag, or automatically when
+# a release is published by .github/workflows/release.yml.
+#
+# Signing: without an Apple Developer ID the build is ad-hoc signed (CSC_NAME=-),
+# which is enough for the app to launch on Apple Silicon but not enough to pass
+# Gatekeeper. Users must clear the quarantine attribute once (see the release
+# notes). Set APPLE_CERT_P12 / APPLE_CERT_PASSWORD to sign properly instead.
+
+on:
+  release:
+    types: [published]
+  push:
+    tags:
+      - "[0-9]*"
+      - "v[0-9]*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to build and attach the DMG to"
+        required: true
+        type: string
+      arch:
+        description: "Target architecture"
+        required: false
+        default: arm64
+        type: choice
+        options:
+          - arm64
+          - x64
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-app-${{ github.event.inputs.tag || github.event.release.tag_name || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  dmg:
+    name: Build ${{ github.event.inputs.arch || 'arm64' }} DMG
+    runs-on: macos-latest
+    timeout-minutes: 60
+
+    env:
+      VELLUM_ENVIRONMENT: production
+      ELECTRON_TARGET_ARCH: ${{ github.event.inputs.arch || 'arm64' }}
+      PACK_PUBLISH: never
+      # Ad-hoc signing keeps the arm64 app launchable without a Developer ID.
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      CSC_NAME: "-"
+
+    steps:
+      - name: Resolve tag
+        id: tag
+        run: |
+          set -euo pipefail
+          TAG="${{ github.event.inputs.tag || github.event.release.tag_name || github.ref_name }}"
+          [ -n "$TAG" ] || { echo "::error::No tag resolved"; exit 1; }
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Check out the tagged commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.tag.outputs.tag }}
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.11"
+
+      - name: Install workspace dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Install Electron binary
+        working-directory: clients/macos
+        run: node node_modules/electron/install.js
+
+      - name: Package
+        working-directory: clients/macos
+        run: bash scripts/pack.sh --env production
+
+      - name: Collect artifacts
+        id: artifacts
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+          ARCH: ${{ github.event.inputs.arch || 'arm64' }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          DMGS=(clients/macos/dist/*.dmg)
+          ZIPS=(clients/macos/dist/*.zip)
+          [ ${#DMGS[@]} -gt 0 ] || { echo "::error::No DMG produced"; exit 1; }
+
+          mkdir -p out
+          cp "${DMGS[0]}" "out/Vellum-${TAG}-${ARCH}.dmg"
+
+          files=("out/Vellum-${TAG}-${ARCH}.dmg")
+          if [ ${#ZIPS[@]} -gt 0 ]; then
+            cp "${ZIPS[0]}" "out/Vellum-${TAG}-${ARCH}-mac.zip"
+            files+=("out/Vellum-${TAG}-${ARCH}-mac.zip")
+          fi
+
+          ls -lh out
+          echo "files=${files[*]}" >> "$GITHUB_OUTPUT"
+
+      - name: Attach to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+          # A tag push starts this job and the release job at the same time;
+          # wait for the release object rather than racing it.
+          for i in $(seq 1 60); do
+            if gh release view "$TAG" >/dev/null 2>&1; then break; fi
+            echo "waiting for release $TAG ($i/60)"
+            sleep 10
+          done
+          gh release upload "$TAG" ${{ steps.artifacts.outputs.files }} --clobber
+          echo "Attached to $(gh release view "$TAG" --json url --jq .url)"
