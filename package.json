@@ -1,6 +1,16 @@
 {
   "name": "vellum-workspace",
   "private": true,
+  "version": "0.12.6-lts.1",
+  "scripts": {
+    "check": "bun run typecheck && bun run test",
+    "typecheck": "cd assistant && bun run typecheck",
+    "test": "cd assistant && bun run test",
+    "lint": "cd assistant && bun run lint",
+    "gateway:typecheck": "cd gateway && bun run typecheck",
+    "gateway:test": "cd gateway && bun run test",
+    "cli:typecheck": "cd cli && bun run typecheck"
+  },
   "workspaces": [
     "assistant",
     "assistant/src/api",
