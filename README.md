@@ -30,13 +30,12 @@
 
 ## Get Started
 
-**1. [Sign up](https://vellum.ai/signup) or [download the app](https://vellum.ai/downloads)**
+**1. [Download the app](https://vellum.ai/downloads)**
 
 The desktop app is available for macOS and Windows. The Windows download is currently a dev build connected to the development environment, with x64 (Intel/AMD) and ARM64 installers. See the [installation guide](https://www.vellum.ai/docs/getting-started/installation) for setup and permissions.
 
 **2. Pick your mode**
 
-- **Managed**: sign in via Vellum Cloud, no local runtime required
 - **Local**: everything runs on your machine
 
 **3. Hatch your assistant**
@@ -145,10 +144,6 @@ We welcome contributions from everyone.
 - **Development**: The [contributing guide](CONTRIBUTING.md) will help you get started.
 - Make sure to check out our [Code of Conduct](CODE_OF_CONDUCT.md).
 
-## Community
-
-- 💬 [Discord](https://vellum.ai/community)
-- 🐛 [Issues](https://github.com/vellum-ai/vellum-assistant/issues)
 
 ## License
 
